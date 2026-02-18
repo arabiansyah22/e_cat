@@ -19,6 +19,7 @@ if (isset($_POST['login'])) {
     if ($user && $password === $user['password']) {
         $_SESSION['login'] = true;
         $_SESSION['user'] = $user;
+        $_SESSION['id_users'] = $user['id_users'];
         header("Location: admin/dashboardAdmin.php");
         exit;
     } else {

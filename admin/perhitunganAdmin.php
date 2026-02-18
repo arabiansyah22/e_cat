@@ -2,10 +2,18 @@
 session_start();
 require_once "../config/db.php";
 
+/* ===============================
+   CEK LOGIN
+================================ */
 if (!isset($_SESSION['login'])) {
     header("Location: ../login.php");
     exit;
 }
+
+/* ===============================
+   AMANKAN SESSION ID USER
+================================ */
+$id_users = isset($_SESSION['id_users']) ? $_SESSION['id_users'] : 0;
 
 /* ===============================
    AMBIL SEMUA DATA BARANG
@@ -21,16 +29,16 @@ $kriteria = ['harga', 'moisture', 'protein', 'lemak', 'crude_fiber'];
 /* ===============================
    AMBIL BOBOT
 ================================ */
-$bobot = $tipe = [];
+$bobot = [];
+$tipe = [];
+
 $qBobot = mysqli_query($koneksi, "SELECT * FROM bobot_kriteria");
 while ($b = mysqli_fetch_assoc($qBobot)) {
     $bobot[$b['nama_kriteria']] = $b['bobot'];
     $tipe[$b['nama_kriteria']] = $b['tipe'];
 }
 
-/* ===============================
-   INISIALISASI
-================================ */
+/* =============================== */
 $dataDiproses = [];
 $ranking = [];
 $normalisasi = [];
@@ -38,7 +46,7 @@ $terbobot = [];
 $error = "";
 
 /* ===============================
-   PROSES SIMPAN & HITUNG
+   PROSES HITUNG
 ================================ */
 if (isset($_POST['simpan_bobot'])) {
 
@@ -48,7 +56,6 @@ if (isset($_POST['simpan_bobot'])) {
 
         $produkDipilih = $_POST['produk'];
 
-        // Ambil hanya produk yang dipilih TANPA mengubah dataBarang
         foreach ($dataBarang as $d) {
             if (in_array($d['id_barang'], $produkDipilih)) {
                 $dataDiproses[] = $d;
@@ -125,7 +132,6 @@ if (isset($_POST['simpan_bobot'])) {
                 $optimasi[$id] = $nilai;
             }
 
-            // Ranking
             foreach ($dataDiproses as $d) {
                 $ranking[] = [
                     'id' => $d['id_barang'],
@@ -134,24 +140,34 @@ if (isset($_POST['simpan_bobot'])) {
                 ];
             }
 
-            usort($ranking, fn($a, $b) => $b['nilai'] <=> $a['nilai']);
+            usort($ranking, function ($a, $b) {
+                return $b['nilai'] <=> $a['nilai'];
+            });
 
             /* ===============================
                SIMPAN RIWAYAT
             ================================ */
-            mysqli_query($koneksi, "INSERT INTO riwayat_moora VALUES (NULL, NOW())");
-            $idRiwayat = mysqli_insert_id($koneksi);
 
-            $rank = 1;
-            foreach ($ranking as $r) {
-                mysqli_query(
-                    $koneksi,
-                    "INSERT INTO riwayat_moora_detail
-                    (id_riwayat,id_barang,nilai_yi,ranking)
-                    VALUES
-                    ('$idRiwayat','{$r['id']}','{$r['nilai']}','$rank')"
-                );
-                $rank++;
+            if ($id_users != 0) {
+
+                mysqli_query($koneksi, "
+                    INSERT INTO riwayat_moora (id_users, tanggal)
+                    VALUES ('$id_users', NOW())
+                ");
+
+                $idRiwayat = mysqli_insert_id($koneksi);
+
+                $rank = 1;
+                foreach ($ranking as $r) {
+                    mysqli_query(
+                        $koneksi,
+                        "INSERT INTO riwayat_moora_detail
+                        (id_riwayat,id_barang,nilai_yi,ranking)
+                        VALUES
+                        ('$idRiwayat','{$r['id']}','{$r['nilai']}','$rank')"
+                    );
+                    $rank++;
+                }
             }
         }
     }
@@ -167,8 +183,11 @@ function namaBarang($id, $data)
             return $d['nama_barang'];
         }
     }
+    return "-";
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="id">
