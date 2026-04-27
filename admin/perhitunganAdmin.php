@@ -80,8 +80,8 @@ if (isset($_POST['simpan_bobot'])) {
                 'harga' => 'cost',
                 'moisture' => 'benefit',
                 'protein' => 'benefit',
-                'lemak' => 'benefit',
-                'crude_fiber' => 'cost'
+                'lemak' => 'cost',
+                'crude_fiber' => 'benefit'
             ];
 
             foreach ($bobotInput as $k => $v) {
@@ -186,8 +186,6 @@ function namaBarang($id, $data)
     return "-";
 }
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="id">
@@ -298,9 +296,6 @@ function namaBarang($id, $data)
             <li><a href="dashboardAdmin.php">📊 Dashboard</a></li>
             <li><a href="manajemenUserAdmin.php">👤 Manajemen User</a></li>
             <li><a href="manajemenBarangAdmin.php">📦 Manajemen Barang</a></li>
-            <li><a href="transaksiAdmin.php">💰 Transaksi Manual</a></li>
-            <li><a href="validasiAdmin.php">💰 Validasi Transaksi</a></li>
-            <li><a href="riwayatAdmin.php">💰 Riwayat Transaksi</a></li>
             <li><a class="active" href="perhitunganAdmin.php">🧮 Metode Perhitungan</a></li>
             <li><a href="riwayatPerhitungan.php">📑 Riwayat Perhitungan</a></li>
             <li class="logout"><a href="../logout.php">🚪 Logout</a></li>
@@ -366,9 +361,88 @@ function namaBarang($id, $data)
             </table>
         </div>
 
+        <!-- Jenis Kriteria -->
+        <div class="card">
+            <h3>Jenis Kriteria</h3>
+            <table>
+                <tr>
+                    <th>Kriteria</th>
+                    <th>Tipe</th>
+                    <th>Bobot</th>
+                </tr>
+                <?php foreach ($kriteria as $k): ?>
+                    <tr>
+                        <td>
+                            <?= $k ?>
+                        </td>
+                        <td>
+                            <?= $tipe[$k] ?? '-' ?>
+                        </td>
+                        <td>
+                            <?= $bobot[$k] ?? '-' ?>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+            </table>
+        </div>
+
+
+        <!-- Normalisasi -->
+        <div class="card">
+            <h3>Normalisasi</h3>
+            <p style="text-align:left">
+                <b>Penjelasan:</b><br>
+                Normalisasi dilakukan untuk menyamakan skala nilai setiap kriteria agar dapat dibandingkan.<br>
+                Rumus normalisasi:<br>
+                Xij* = Xij / √(∑Xij²)<br><br>
+
+                Keterangan:<br>
+                - Xij = nilai asli alternatif terhadap kriteria<br>
+                - √(∑Xij²) = akar dari jumlah kuadrat semua nilai pada kriteria tersebut<br><br>
+
+                Nilai pada tabel ini diperoleh dari pembagian setiap nilai dengan hasil akar jumlah kuadrat pada
+                masing-masing kriteria.
+            </p>
+            <table>
+                <tr>
+                    <th>Alternatif</th>
+                    <?php foreach ($kriteria as $k): ?>
+                        <th>
+                            <?= $k ?>
+                        </th>
+                    <?php endforeach ?>
+                </tr>
+                <?php foreach ($normalisasi as $id => $row): ?>
+                    <tr>
+                        <td>
+                            <?= namaBarang($id, $dataDiproses) ?>
+                        </td>
+                        <?php foreach ($kriteria as $k): ?>
+                            <td>
+                                <?= round($row[$k], 4) ?>
+                            </td>
+                        <?php endforeach ?>
+                    </tr>
+                <?php endforeach ?>
+            </table>
+        </div>
+
 
         <div class="card">
             <h3>Normalisasi × Bobot</h3>
+            <p style="text-align:left">
+                <b>Penjelasan:</b><br>
+                Nilai normalisasi kemudian dikalikan dengan bobot masing-masing kriteria.<br>
+                Rumus:<br>
+                Vij = Wj × Xij*<br><br>
+
+                Keterangan:<br>
+                - Wj = bobot kriteria<br>
+                - Xij* = nilai hasil normalisasi<br><br>
+
+                Hasil pada tabel ini menunjukkan nilai setiap alternatif setelah mempertimbangkan tingkat kepentingan
+                kriteria.
+            </p>
             <table>
                 <tr>
                     <th>Alternatif</th>
@@ -394,8 +468,71 @@ function namaBarang($id, $data)
             </table>
         </div>
 
+        <!-- Detail Yi -->
+        <div class="card">
+            <h3>Detail Perhitungan Yi</h3>
+            <p style="text-align:left">
+                <b>Penjelasan:</b><br>
+                Nilai Yi dihitung dengan menjumlahkan semua nilai kriteria bertipe benefit, kemudian dikurangi dengan
+                nilai kriteria bertipe cost.<br>
+                Rumus:<br>
+                Yi = ∑Benefit - ∑Cost<br><br>
+
+                Keterangan:<br>
+                - Benefit = kriteria yang semakin besar semakin baik<br>
+                - Cost = kriteria yang semakin kecil semakin baik<br><br>
+
+                Pada tabel ini ditampilkan total nilai benefit, total cost, dan hasil akhir Yi dari setiap alternatif.
+            </p>
+            <table>
+                <tr>
+                    <th>Alternatif</th>
+                    <th>Benefit</th>
+                    <th>Cost</th>
+                    <th>Yi</th>
+                </tr>
+
+                <?php foreach ($terbobot as $id => $row):
+                    $benefit = 0;
+                    $cost = 0;
+
+                    foreach ($kriteria as $k) {
+                        if ($tipe[$k] == 'benefit')
+                            $benefit += $row[$k];
+                        else
+                            $cost += $row[$k];
+                    }
+
+                    $yi = $benefit - $cost;
+                    ?>
+                    <tr>
+                        <td>
+                            <?= namaBarang($id, $dataDiproses) ?>
+                        </td>
+                        <td>
+                            <?= round($benefit, 4) ?>
+                        </td>
+                        <td>
+                            <?= round($cost, 4) ?>
+                        </td>
+                        <td>
+                            <?= round($yi, 4) ?>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+            </table>
+        </div>
+
+
         <div class="card">
             <h3>Nilai Yi & Ranking</h3>
+            <p style="text-align:left">
+                <b>Penjelasan:</b><br>
+                Ranking diperoleh berdasarkan nilai Yi terbesar hingga terkecil.<br>
+                Alternatif dengan nilai Yi tertinggi merupakan pilihan terbaik.<br><br>
+
+                Semakin besar nilai Yi, maka semakin baik alternatif tersebut berdasarkan kriteria yang digunakan.
+            </p>
             <table>
                 <tr>
                     <th>Rank</th>

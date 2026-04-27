@@ -211,9 +211,6 @@ if (isset($_GET['edit'])) {
             <li><a href="dashboardAdmin.php">📊 Dashboard</a></li>
             <li><a class="active" href="manajemenUserAdmin.php">👤 Manajemen User</a></li>
             <li><a href="manajemenBarangAdmin.php">📦 Manajemen Barang</a></li>
-            <li><a  href="transaksiAdmin.php">💰 Transaksi Manual</a></li>
-            <li><a href="validasiAdmin.php">💰 Validasi Transaksi</a></li>
-            <li><a href="riwayatAdmin.php">💰 Riwayat Transaksi</a></li>
             <li><a href="perhitunganAdmin.php">🧮 Metode Perhitungan</a></li>
             <li><a shref="riwayatPerhitungan.php">📑 Riwayat Perhitungan</a></li>
             <li class="logout"><a href="../logout.php">🚪 Logout</a></li>
